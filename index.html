@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>강의 시간표 및 장소 검색</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .filter-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            color: #555;
+            font-size: 0.9em;
+        }
+
+        .filter-group select {
+            padding: 10px 15px;
+            font-size: 1em;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s;
+            min-width: 150px;
+        }
+
+        .filter-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .search-box {
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 15px 50px 15px 20px;
+            font-size: 1.1em;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            transition: border-color 0.3s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .search-box::after {
+            content: '🔍';
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2em;
+        }
+
+        .clear-btn {
+            position: absolute;
+            right: 60px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #ddd;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+            font-size: 0.9em;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+
+        .clear-btn:hover {
+            background: #bbb;
+        }
+
+        .clear-btn.show {
+            display: flex;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .schedule-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .schedule-table td {
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            vertical-align: top;
+            min-height: 100px;
+        }
+
+        .schedule-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .schedule-table tr:hover {
+            background: #f0f0f0;
+        }
+
+        .room-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .room-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-weight: 600;
+            min-width: 100px;
+        }
+
+        .room-table td {
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            text-align: center;
+            vertical-align: top;
+            min-height: 80px;
+            position: relative;
+        }
+
+        .room-table td.has-class {
+            background: #fff3cd;
+            cursor: pointer;
+        }
+
+        .room-table td.has-class:hover {
+            background: #ffe69c;
+        }
+
+        .room-number {
+            font-weight: bold;
+            font-size: 0.85em;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        .class-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 8px;
+            margin-bottom: 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .class-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        .class-name {
+            font-size: 0.95em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 4px;
+            line-height: 1.3;
+        }
+
+        .class-info {
+            color: #666;
+            font-size: 0.75em;
+            line-height: 1.4;
+        }
+
+        .class-info span {
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .class-meta {
+            font-size: 0.7em;
+            color: #888;
+            margin-top: 3px;
+        }
+
+        .location {
+            color: #667eea;
+            font-weight: 600;
+            font-size: 0.7em;
+        }
+
+        .time {
+            color: #764ba2;
+            font-weight: 600;
+            font-size: 0.7em;
+        }
+
+        .professor {
+            color: #555;
+            font-size: 0.7em;
+        }
+
+        .professor-name {
+            color: #667eea;
+            cursor: pointer;
+            text-decoration: underline;
+            font-weight: 600;
+        }
+
+        .professor-name:hover {
+            color: #764ba2;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 50px;
+            color: #999;
+            font-size: 1.2em;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2em;
+            color: #667eea;
+        }
+
+        .stats {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #666;
+        }
+
+        .time-header {
+            background: #f8f8f8;
+            font-weight: 600;
+            text-align: center;
+            width: 80px;
+        }
+
+        .empty-cell {
+            min-height: 50px;
+        }
+
+        .row-header {
+            background: #f8f8f8;
+            font-weight: 600;
+            text-align: center;
+            width: 60px;
+        }
+
+        /* 모달 스타일 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            overflow: auto;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 1000px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #333;
+            font-size: 1.8em;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 20px;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #000;
+        }
+
+        .room-detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .room-detail-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .room-detail-table td {
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            vertical-align: top;
+            font-size: 0.85em;
+        }
+
+        .room-detail-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .room-detail-class-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 8px;
+            margin-bottom: 6px;
+            font-size: 0.8em;
+        }
+
+        .room-detail-class-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 4px;
+            font-size: 0.9em;
+        }
+
+        .room-detail-class-meta {
+            font-size: 0.75em;
+            color: #888;
+            margin-bottom: 3px;
+        }
+
+        .room-detail-class-info {
+            font-size: 0.7em;
+            color: #666;
+        }
+
+        #schedule-content {
+            overflow-x: scroll;
+        }
+
+        .room-table {
+            overflow-x: scroll;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 강의 시간표 및 장소 검색</h1>
+            <p>건물과 교시를 선택하면 강의실 배치를 확인할 수 있습니다</p>
+            <p>핸드폰 환경에서는 제대로 보이지 않을 수 있습니다.</p>
+        </div>
+
+        <div class="content">
+            <!-- 건물 및 교시 선택 -->
+            <div class="filter-section">
+                <div class="filter-group">
+                    <label for="building-select">건물 선택</label>
+                    <select id="building-select" onchange="updateRoomTable()">
+                        <option value="">전체</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="day-select">요일 선택</label>
+                    <select id="day-select" onchange="updateRoomTable()">
+                        <option value="">전체</option>
+                        <option value="월">월요일</option>
+                        <option value="화">화요일</option>
+                        <option value="수">수요일</option>
+                        <option value="목">목요일</option>
+                        <option value="금">금요일</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="period-select">교시 선택</label>
+                    <select id="period-select" onchange="updateRoomTable()">
+                        <option value="">전체</option>
+                        <option value="1">1교시</option>
+                        <option value="2">2교시</option>
+                        <option value="3">3교시</option>
+                        <option value="4">4교시</option>
+                        <option value="5">5교시</option>
+                        <option value="6">6교시</option>
+                        <option value="7">7교시</option>
+                        <option value="8">8교시</option>
+                        <option value="9">9교시</option>
+                        <option value="10">10교시</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="major-select">전공 코드</label>
+                    <select id="major-select" onchange="updateRoomTable()">
+                        <option value="">전체</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 기존 검색 기능 -->
+            <div class="search-box">
+                <input type="text" id="location-search" placeholder="장소를 입력하세요 (예: 비501, 누403)" onkeyup="filterSchedule()" oninput="toggleClearBtn()">
+                <button class="clear-btn" id="clear-btn" onclick="clearSearch()">✕</button>
+            </div>
+            <div class="stats" id="stats"></div>
+            <div id="schedule-content" class="loading" style="overflow-y: auto;">시간표를 불러오는 중...</div>
+        </div>
+    </div>
+
+    <!-- 강의실 상세 모달 -->
+    <div id="roomModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalRoomName">강의실 상세 정보</h2>
+                <span class="close" onclick="closeRoomModal()">&times;</span>
+            </div>
+            <div id="modalRoomContent"></div>
+        </div>
+    </div>
+
+    <!-- 교수 상세 모달 -->
+    <div id="professorModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalProfessorName">교수 상세 정보</h2>
+                <span class="close" onclick="closeProfessorModal()">&times;</span>
+            </div>
+            <div id="modalProfessorContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let classData = [];
+        const days = ['월', '화', '수', '목', '금'];
+        const maxPeriod = 12; // 최대 교시 수
+        let buildings = new Set();
+        let majorCodes = new Set();
+        let viewMode = 'schedule'; // 'schedule' or 'room'
+
+        // JSON 파일 로드
+        async function loadData() {
+            try {
+                const response = await fetch('class_list.json');
+                classData = await response.json();
+                
+                // 건물 목록 추출
+                extractBuildings();
+                populateBuildingSelect();
+                // 전공 코드 목록 추출
+                extractMajorCodes();
+                populateMajorSelect();
+                renderSchedule();
+            } catch (error) {
+                document.getElementById('schedule-content').innerHTML = 
+                    '<div class="no-results">데이터를 불러오는 중 오류가 발생했습니다.</div>';
+                console.error('Error loading data:', error);
+            }
+        }
+
+        // 건물 목록 추출 (locHname에서 첫 글자 추출)
+        function extractBuildings() {
+            buildings.clear();
+            classData.forEach(cls => {
+                cls.rooms.forEach(room => {
+                    if (room.locHname) {
+                        // 한글 건물명 추출 (예: "비501" -> "비", "한울B102" -> "한울")
+                        const match = room.locHname.match(/^([가-힣]+)/);
+                        if (match) {
+                            buildings.add(match[1]);
+                        }
+                    }
+                });
+            });
+        }
+
+        // 건물 선택 드롭다운 채우기
+        function populateBuildingSelect() {
+            const select = document.getElementById('building-select');
+            const sortedBuildings = Array.from(buildings).sort();
+            sortedBuildings.forEach(building => {
+                const option = document.createElement('option');
+                option.value = building;
+                option.textContent = building;
+                select.appendChild(option);
+            });
+        }
+
+        // 전공 코드 목록 추출
+        function extractMajorCodes() {
+            majorCodes.clear();
+            classData.forEach(cls => {
+                if (cls.openMajorCode) {
+                    majorCodes.add(cls.openMajorCode);
+                }
+            });
+        }
+
+        // 전공 코드 선택 드롭다운 채우기
+        function populateMajorSelect() {
+            const select = document.getElementById('major-select');
+            const sortedMajorCodes = Array.from(majorCodes).sort();
+            sortedMajorCodes.forEach(majorCode => {
+                const option = document.createElement('option');
+                option.value = majorCode;
+                option.textContent = majorCode;
+                select.appendChild(option);
+            });
+        }
+
+        // 강의실 테이블 업데이트
+        function updateRoomTable() {
+            const building = document.getElementById('building-select').value;
+            const day = document.getElementById('day-select').value;
+            const period = document.getElementById('period-select').value;
+            const majorCode = document.getElementById('major-select').value;
+            
+            if (!building) {
+                // 건물이 선택되지 않으면 기존 시간표 표시
+                viewMode = 'schedule';
+                filterSchedule();
+                return;
+            }
+
+            viewMode = 'room';
+            renderRoomTable(building, day || null, period ? parseInt(period) : null, majorCode || null);
+        }
+
+        // 강의실 테이블 렌더링
+        function renderRoomTable(building, day = null, period = null, majorCode = null) {
+            const scheduleContent = document.getElementById('schedule-content');
+            const statsDiv = document.getElementById('stats');
+
+            // 해당 건물의 강의실 데이터 수집
+            const roomData = new Map(); // key: "층|호수", value: 강의 목록
+
+            classData.forEach(cls => {
+                // 전공 코드 필터 확인
+                if (majorCode !== null && cls.openMajorCode !== majorCode) {
+                    return;
+                }
+
+                cls.rooms.forEach(room => {
+                    if (room.locHname && room.locHname.startsWith(building)) {
+                        // 요일 필터 확인
+                        if (day !== null && room.dayname1 !== day) {
+                            return;
+                        }
+
+                        // 교시 필터 확인
+                        if (period !== null) {
+                            const matchesPeriod = room.timeNo1 === period || 
+                                                 room.timeNo2 === period || 
+                                                 room.timeNo3 === period || 
+                                                 room.timeNo4 === period;
+                            if (!matchesPeriod) return;
+                        }
+
+                        // 호수에서 층과 호 추출
+                        // 예: "B101" -> 지하1층, 1열 / "1007" -> 10층, 7열 / "302" -> 3층, 2열
+                        const roomNumber = room.locHname.substring(building.length);
+                        let floor = null;
+                        let col = null;
+                        
+                        // B로 시작하는 경우 (지하층) - 예: "B101", "B102"
+                        if (roomNumber.match(/^B/i)) {
+                            const match = roomNumber.match(/^B(\d)(\d{2})$/i);
+                            if (match) {
+                                const floorNum = parseInt(match[1]);
+                                const colNum = parseInt(match[2]);
+
+                                if (floorNum > 0 && colNum > 0) {
+                                    floor = -floorNum; // 음수로 지하층 표시
+                                    col = colNum;
+                                }
+                                
+                            }
+                        } 
+                        // 숫자로 시작하는 경우
+                        else {
+                            // 10XX 형식 (10층) - 예: "1007"
+                            const match10 = roomNumber.match(/^10(\d{2})$/);
+                            if (match10) {
+                                const colNum = parseInt(match10[1]);
+                                if (colNum > 0) {
+                                    floor = 10;
+                                    col = colNum;
+                                }
+                            }
+                            // 1-9XX 형식 (1-9층) - 예: "302", "501"
+                            else {
+                                const match = roomNumber.match(/^(\d)(\d{2})$/);
+                                if (match) {
+                                    const floorNum = parseInt(match[1]);
+                                    const colNum = parseInt(match[2]);
+                                    // 0층은 존재하지 않으므로 제외
+                                    if (floorNum > 0 && colNum > 0) {
+                                        floor = floorNum;
+                                        col = colNum;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (floor !== null && col !== null && floor !== 0 && col > 0) {
+                            const key = `${floor}|${col}`;
+                            
+                            if (!roomData.has(key)) {
+                                roomData.set(key, []);
+                            }
+                            roomData.get(key).push({
+                                class: cls,
+                                room: room,
+                                roomNumber: room.locHname
+                            });
+                        }
+                    }
+                });
+            });
+
+            // 통계 정보
+            const dayText = day ? `${day}요일 ` : '';
+            const periodText = period ? `${period}교시 ` : '';
+            const majorText = majorCode ? `[${majorCode}] ` : '';
+            statsDiv.textContent = `${building} 건물 ${majorText}${dayText}${periodText}강의실 배치 (총 ${roomData.size}개 강의실 사용 중)`;
+
+            // 최소/최대 층수와 열 찾기
+            let minFloor = Infinity;
+            let maxFloor = -Infinity;
+            let maxCol = 0;
+            roomData.forEach((classes, key) => {
+                const [floor, col] = key.split('|').map(Number);
+                minFloor = Math.min(minFloor, floor);
+                maxFloor = Math.max(maxFloor, floor);
+                maxCol = Math.max(maxCol, col);
+            });
+
+            if (maxFloor === -Infinity || maxCol === 0) {
+                scheduleContent.innerHTML = '<div class="no-results">선택한 조건에 해당하는 강의실이 없습니다.</div>';
+                return;
+            }
+
+            // 테이블 생성 (열은 1부터 시작)
+            let html = '<table class="room-table"><thead><tr><th>층/열</th>';
+            for (let c = 1; c <= maxCol; c++) {
+                html += `<th>${c}열</th>`;
+            }
+            html += '</tr></thead><tbody>';
+
+            // 각 층별로 행 생성 (지하층부터 지상층 순서)
+            for (let floor = minFloor; floor <= maxFloor; floor++) {
+                // 0층은 건너뛰기 (0층은 존재하지 않음)
+                if (floor === 0) continue;
+                
+                let floorLabel = '';
+                if (floor < 0) {
+                    floorLabel = `지하${Math.abs(floor)}층`;
+                } else {
+                    floorLabel = `${floor}층`;
+                }
+                html += `<tr><td class="row-header">${floorLabel}</td>`;
+                for (let col = 1; col <= maxCol; col++) {
+                    const key = `${floor}|${col}`;
+                    const classes = roomData.get(key) || [];
+                    
+                    if (classes.length > 0) {
+                        html += '<td class="has-class" onclick="showRoomDetail(\'' + building + '\', \'' + classes[0].roomNumber + '\')">';
+                        // 실제 호수 찾기
+                        const firstClass = classes[0];
+                        html += `<div class="room-number">${firstClass.roomNumber}</div>`;
+                        classes.forEach(item => {
+                            html += renderRoomClassItem(item.class, item.room);
+                        });
+                        html += '</td>';
+                    } else {
+                        html += '<td></td>';
+                    }
+                }
+                html += '</tr>';
+            }
+
+            html += '</tbody></table>';
+            scheduleContent.innerHTML = html;
+        }
+
+        // 강의실 테이블용 강의 아이템 렌더링
+        function renderRoomClassItem(cls, room) {
+            const periods = [];
+            if (room.timeNo1) periods.push(room.timeNo1);
+            if (room.timeNo2) periods.push(room.timeNo2);
+            if (room.timeNo3) periods.push(room.timeNo3);
+            if (room.timeNo4) periods.push(room.timeNo4);
+            const timeStr = periods.sort((a,b) => a-b).join(',') + '교시';
+            const grade = cls.openGrade || '';
+            const codeName = cls.codeName1 || '';
+            const professorName = cls.memberName || '미정';
+            const stuCount = cls.sugangCount || '폐강';
+            const professorDisplay = professorName !== '미정' 
+                ? `<span class="professor-name" onclick="showProfessorDetail('${professorName.replace(/'/g, "\\'")}')">${professorName}</span>`
+                : professorName;
+
+            return `
+                <div class="class-item">
+                    <div class="class-name">${cls.gwamokKname} (${professorDisplay})</div>
+                    <div class="class-meta">${grade}학년 ${codeName} (${stuCount}명)</div>
+                    <div class="class-info">
+                        <span class="time">⏰ ${room.dayname1} ${timeStr}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 검색창 지우기 버튼 표시/숨김
+        function toggleClearBtn() {
+            const searchInput = document.getElementById('location-search');
+            const clearBtn = document.getElementById('clear-btn');
+            if (searchInput.value.trim()) {
+                clearBtn.classList.add('show');
+            } else {
+                clearBtn.classList.remove('show');
+            }
+        }
+
+        // 검색창 지우기
+        function clearSearch() {
+            document.getElementById('location-search').value = '';
+            document.getElementById('clear-btn').classList.remove('show');
+            filterSchedule();
+        }
+
+        // 장소로 필터링된 시간표 렌더링
+        function filterSchedule() {
+            const searchTerm = document.getElementById('location-search').value.trim().toLowerCase();
+            viewMode = 'schedule';
+            renderSchedule(searchTerm);
+        }
+
+        // 시간표 렌더링
+        function renderSchedule(locationFilter = '') {
+            const scheduleContent = document.getElementById('schedule-content');
+            const statsDiv = document.getElementById('stats');
+            
+            // 필터링된 데이터
+            let filteredData = classData;
+            if (locationFilter) {
+                filteredData = classData.filter(cls => {
+                    return cls.rooms.some(room => 
+                        room.locHname && room.locHname.toLowerCase().includes(locationFilter)
+                    );
+                });
+            }
+
+            // 통계 정보
+            if (locationFilter) {
+                statsDiv.textContent = `"${locationFilter}" 검색 결과: ${filteredData.length}개의 강의가 있습니다.`;
+            } else {
+                statsDiv.textContent = `총 ${classData.length}개의 강의가 있습니다.`;
+            }
+
+            // 시간표 테이블 생성
+            let html = '<table class="schedule-table"><thead><tr><th>교시</th>';
+            days.forEach(day => {
+                html += `<th>${day}요일</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            // 각 교시별로 행 생성
+            for (let period = 1; period <= maxPeriod; period++) {
+                html += `<tr><td class="time-header">${period}교시</td>`;
+                
+                // 각 요일별로 셀 생성
+                days.forEach(day => {
+                    html += '<td>';
+                    const classes = getClassesByDayAndPeriod(filteredData, day, period, locationFilter);
+                    if (classes.length === 0) {
+                        html += '<div class="empty-cell"></div>';
+                    } else {
+                        classes.forEach(cls => {
+                            html += renderClassItem(cls, day, period);
+                        });
+                    }
+                    html += '</td>';
+                });
+                
+                html += '</tr>';
+            }
+
+            html += '</tbody></table>';
+            scheduleContent.innerHTML = html;
+        }
+
+        // 특정 요일과 교시의 강의 가져오기
+        function getClassesByDayAndPeriod(data, day, period, locationFilter) {
+            return data.filter(cls => {
+                return cls.rooms.some(room => {
+                    if (room.dayname1 !== day) return false;
+                    
+                    // 교시 확인
+                    const matchesPeriod = room.timeNo1 === period || 
+                                         room.timeNo2 === period || 
+                                         room.timeNo3 === period || 
+                                         room.timeNo4 === period;
+                    
+                    if (!matchesPeriod) return false;
+                    
+                    // 장소 필터가 있으면 장소도 확인
+                    if (locationFilter) {
+                        return room.locHname && room.locHname.toLowerCase().includes(locationFilter);
+                    }
+                    
+                    return true;
+                });
+            });
+        }
+
+        // 강의 아이템 렌더링
+        function renderClassItem(cls, day, period) {
+            const room = cls.rooms.find(r => r.dayname1 === day && 
+                (r.timeNo1 === period || r.timeNo2 === period || 
+                 r.timeNo3 === period || r.timeNo4 === period));
+            
+            if (!room) return '';
+            
+            const periods = [];
+            if (room.timeNo1) periods.push(room.timeNo1);
+            if (room.timeNo2) periods.push(room.timeNo2);
+            if (room.timeNo3) periods.push(room.timeNo3);
+            if (room.timeNo4) periods.push(room.timeNo4);
+            const timeStr = periods.sort((a,b) => a-b).join(',') + '교시';
+            const stuCount = cls.sugangCount || '폐강';
+            const grade = cls.openGrade || '';
+            const codeName = cls.codeName1 || '';
+            const professorName = cls.memberName || '미정';
+            const professorDisplay = professorName !== '미정' 
+                ? `<span class="professor-name" onclick="showProfessorDetail('${professorName.replace(/'/g, "\\'")}')">${professorName}</span>`
+                : professorName;
+
+            return `
+                <div class="class-item">
+                    <div class="class-name">${cls.gwamokKname} (${professorDisplay})</div>
+                    <div class="class-meta">${grade}학년 ${codeName} (${stuCount}명) </div>
+                    <div class="class-info">
+                        <span class="location">📍 ${room.locHname}</span>
+                        <span class="time">⏰ ${timeStr}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 강의실 상세 정보 표시
+        function showRoomDetail(building, roomNumber) {
+            const modal = document.getElementById('roomModal');
+            const modalRoomName = document.getElementById('modalRoomName');
+            const modalRoomContent = document.getElementById('modalRoomContent');
+            
+            modalRoomName.textContent = `${roomNumber} 강의실 상세 정보`;
+            
+            // 해당 강의실의 모든 강의 수집
+            const roomClasses = [];
+            classData.forEach(cls => {
+                cls.rooms.forEach(room => {
+                    if (room.locHname === roomNumber) {
+                        roomClasses.push({
+                            class: cls,
+                            room: room
+                        });
+                    }
+                });
+            });
+
+            if (roomClasses.length === 0) {
+                modalRoomContent.innerHTML = '<div class="no-results">이 강의실에 등록된 강의가 없습니다.</div>';
+                modal.style.display = 'block';
+                return;
+            }
+
+            // 요일별, 교시별로 정리
+            const scheduleData = {};
+            days.forEach(day => {
+                scheduleData[day] = {};
+                for (let period = 1; period <= maxPeriod; period++) {
+                    scheduleData[day][period] = [];
+                }
+            });
+
+            roomClasses.forEach(item => {
+                const room = item.room;
+                const day = room.dayname1;
+                if (day && scheduleData[day]) {
+                    if (room.timeNo1) scheduleData[day][room.timeNo1].push(item);
+                    if (room.timeNo2) scheduleData[day][room.timeNo2].push(item);
+                    if (room.timeNo3) scheduleData[day][room.timeNo3].push(item);
+                    if (room.timeNo4) scheduleData[day][room.timeNo4].push(item);
+                }
+            });
+
+            // 시간표 생성
+            let html = '<table class="room-detail-table"><thead><tr><th>교시</th>';
+            days.forEach(day => {
+                html += `<th>${day}요일</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            for (let period = 1; period <= maxPeriod; period++) {
+                html += `<tr><td class="time-header" style="background: #f8f8f8; font-weight: 600; text-align: center;">${period}교시</td>`;
+                days.forEach(day => {
+                    html += '<td>';
+                    const classes = scheduleData[day][period] || [];
+                    if (classes.length > 0) {
+                        classes.forEach(item => {
+                            html += renderRoomDetailClassItem(item.class, item.room, period);
+                        });
+                    }
+                    html += '</td>';
+                });
+                html += '</tr>';
+            }
+
+            html += '</tbody></table>';
+            modalRoomContent.innerHTML = html;
+            modal.style.display = 'block';
+        }
+
+        // 강의실 상세 모달 닫기
+        function closeRoomModal() {
+            document.getElementById('roomModal').style.display = 'none';
+        }
+
+        // 모달 외부 클릭 시 닫기
+        window.onclick = function(event) {
+            const roomModal = document.getElementById('roomModal');
+            const professorModal = document.getElementById('professorModal');
+            if (event.target == roomModal) {
+                roomModal.style.display = 'none';
+            }
+            if (event.target == professorModal) {
+                professorModal.style.display = 'none';
+            }
+        }
+
+        // 강의실 상세 시간표용 강의 아이템 렌더링
+        function renderRoomDetailClassItem(cls, room, period) {
+            const periods = [];
+            if (room.timeNo1) periods.push(room.timeNo1);
+            if (room.timeNo2) periods.push(room.timeNo2);
+            if (room.timeNo3) periods.push(room.timeNo3);
+            if (room.timeNo4) periods.push(room.timeNo4);
+            const timeStr = periods.sort((a,b) => a-b).join(',') + '교시';
+            const stuCount = cls.sugangCount || '폐강';
+            const grade = cls.openGrade || '';
+            const codeName = cls.codeName1 || '';
+            const professorName = cls.memberName || '미정';
+            const professorDisplay = professorName !== '미정' 
+                ? `<span class="professor-name" onclick="showProfessorDetail('${professorName.replace(/'/g, "\\'")}')">${professorName}</span>`
+                : professorName;
+
+            return `
+                <div class="room-detail-class-item">
+                    <div class="room-detail-class-name">${cls.gwamokKname} (${professorDisplay})</div>
+                    <div class="room-detail-class-meta">${grade}학년 ${codeName} (${stuCount}명)</div>
+                    <div class="room-detail-class-info">${timeStr}</div>
+                </div>
+            `;
+        }
+
+        // 교수 상세 정보 표시
+        function showProfessorDetail(professorName) {
+            const modal = document.getElementById('professorModal');
+            const modalProfessorName = document.getElementById('modalProfessorName');
+            const modalProfessorContent = document.getElementById('modalProfessorContent');
+            
+            modalProfessorName.textContent = `${professorName} 교수님 강의 목록`;
+            
+            // 해당 교수의 모든 강의 수집
+            const professorClasses = [];
+            classData.forEach(cls => {
+                if (cls.memberName === professorName) {
+                    cls.rooms.forEach(room => {
+                        professorClasses.push({
+                            class: cls,
+                            room: room
+                        });
+                    });
+                }
+            });
+
+            if (professorClasses.length === 0) {
+                modalProfessorContent.innerHTML = '<div class="no-results">등록된 강의가 없습니다.</div>';
+                modal.style.display = 'block';
+                return;
+            }
+
+            // 요일별, 교시별로 정리
+            const scheduleData = {};
+            days.forEach(day => {
+                scheduleData[day] = {};
+                for (let period = 1; period <= maxPeriod; period++) {
+                    scheduleData[day][period] = [];
+                }
+            });
+
+            professorClasses.forEach(item => {
+                const room = item.room;
+                const day = room.dayname1;
+                if (day && scheduleData[day]) {
+                    if (room.timeNo1) scheduleData[day][room.timeNo1].push(item);
+                    if (room.timeNo2) scheduleData[day][room.timeNo2].push(item);
+                    if (room.timeNo3) scheduleData[day][room.timeNo3].push(item);
+                    if (room.timeNo4) scheduleData[day][room.timeNo4].push(item);
+                }
+            });
+
+            // 통계 정보
+            const uniqueClasses = new Set();
+            professorClasses.forEach(item => {
+                uniqueClasses.add(item.class.gwamokKname);
+            });
+
+            // 시간표 생성
+            let html = `<div style="margin-bottom: 15px; padding: 10px; background: #f5f5f5; border-radius: 8px;">
+                <strong>총 ${professorClasses.length}개 강의 시간, ${uniqueClasses.size}개 과목</strong>
+            </div>`;
+            html += '<table class="room-detail-table"><thead><tr><th>교시</th>';
+            days.forEach(day => {
+                html += `<th>${day}요일</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            for (let period = 1; period <= maxPeriod; period++) {
+                html += `<tr><td class="time-header" style="background: #f8f8f8; font-weight: 600; text-align: center;">${period}교시</td>`;
+                days.forEach(day => {
+                    html += '<td>';
+                    const classes = scheduleData[day][period] || [];
+                    if (classes.length > 0) {
+                        classes.forEach(item => {
+                            html += renderProfessorDetailClassItem(item.class, item.room, period);
+                        });
+                    }
+                    html += '</td>';
+                });
+                html += '</tr>';
+            }
+
+            html += '</tbody></table>';
+            modalProfessorContent.innerHTML = html;
+            modal.style.display = 'block';
+        }
+
+        // 교수 상세 시간표용 강의 아이템 렌더링
+        function renderProfessorDetailClassItem(cls, room, period) {
+            const periods = [];
+            if (room.timeNo1) periods.push(room.timeNo1);
+            if (room.timeNo2) periods.push(room.timeNo2);
+            if (room.timeNo3) periods.push(room.timeNo3);
+            if (room.timeNo4) periods.push(room.timeNo4);
+            const timeStr = periods.sort((a,b) => a-b).join(',') + '교시';
+            const grade = cls.openGrade || '';
+            const codeName = cls.codeName1 || '';
+            const stuCount = cls.sugangCount || '폐강';
+
+            return `
+                <div class="room-detail-class-item">
+                    <div class="room-detail-class-name">${cls.gwamokKname} (${cls.bunbanNo}분반)</div>
+                    <div class="room-detail-class-meta">${grade}학년 ${codeName} (${stuCount}명)</div>
+                    <div class="room-detail-class-info">📍 ${room.locHname} | ⏰ ${timeStr}</div>
+                </div>
+            `;
+        }
+
+        // 교수 상세 모달 닫기
+        function closeProfessorModal() {
+            document.getElementById('professorModal').style.display = 'none';
+        }
+
+        // 페이지 로드 시 데이터 로드
+        loadData();
+    </script>
+</body>
+</html>
